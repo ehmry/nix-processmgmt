@@ -1,7 +1,9 @@
-{ lib, writeTextFile, toPreserves }:
+{ lib, runtimeShell, toPreserves, writeScript, writeTextFile }:
 
 { name, description, argv, environment, directory
-# List of services that this configuration depends on.
+# Shell instructions that specify how the state of the process should be initialized.
+, initialize ? ""
+  # List of services that this configuration depends on.
 , dependencies ? [ ]
   # Daemon will not be started until all elements of depends-on are asserted.
   # Example: [ "<service-state <milestone network> up>" ]
@@ -38,6 +40,21 @@ in writeTextFile {
     + (lib.strings.concatMapStrings (pkg: ''
       <depends-on ${serviceName} ${pkg.serviceName}>
     '') dependencies)
+
+    + (lib.strings.optionalString (initialize != "") (let
+      # TODO: depend the initialization on other dependencies?
+      initializeName = "initialize-${name}";
+      script = writeScript "${initializeName}.sh" ''
+        #!${runtimeShell}
+        ${initialize}
+      '';
+    in ''
+      <depends-on ${serviceName} <service-state <daemon ${initializeName}> complete>>
+      <deamon ${initializeName} {
+        argv: [ "${script}" ]
+        restart: on-error
+      }>
+    ''))
 
     + ''
       <daemon ${name} ${toPreserves processSpec}>

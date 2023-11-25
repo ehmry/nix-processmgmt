@@ -6,7 +6,7 @@
 
 let
   generatedTargetSpecificArgs = {
-    inherit name description environment directory dependencies;
+    inherit name description environment directory dependencies initialize;
 
     argv = if foregroundProcess != null then
       [ foregroundProcess ] ++ foregroundProcessArgs
