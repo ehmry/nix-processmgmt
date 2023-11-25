@@ -114,8 +114,8 @@ let
     inherit s6-rc basePackages tmpDir runtimeDir forceDisableUserChange;
   };
 
-  generateSynitService = import ../../backends/synit/generate-synit-service.nix {
-    inherit (pkgs) stdenv lib execline writeTextFile;
+  synit = import ../../backends/synit {
+    inherit (pkgs) lib writeTextFile;
   };
 
 in
@@ -133,6 +133,6 @@ import ../agnostic/create-managed-process.nix {
     supervisord = generateSupervisordProgram;
     systemd = generateSystemdService;
     sysvinit = generateSystemVInitScript;
-    synit = generateSynitService;
+    synit = synit.generateSynitService;
   };
 }

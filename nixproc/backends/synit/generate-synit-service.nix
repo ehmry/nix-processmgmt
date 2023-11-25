@@ -1,30 +1,16 @@
-{ stdenv, lib, execline, writeTextFile }:
+{ lib, createSynitDaemon }:
 
 { name, description, initialize, daemon, daemonArgs, instanceName, pidFile
 , foregroundProcess, foregroundProcessArgs, path, environment, directory, umask
 , nice, user, dependencies, credentials, overrides, postInstall }:
 
 let
-  util = import ../util { inherit lib; };
+  generatedTargetSpecificArgs = {
+    inherit name description daemon daemonArgs environment directory;
+  };
 
-  generator = import ./preserves-generator.nix { inherit lib; };
-  toPreserves = generator.toPreserves { };
-
-  escapeArgs = args:
-    lib.concatMapStringsSep " "
-    (arg: ''"${lib.replaceStrings [ ''"'' ] [ ''\"'' ] (toString arg)}"'') args;
-
-  processSpec = {
-    argv = "${daemon} ${toString daemonArgs}";
-    env = environment;
-  } // (lib.attrsets.optionalAttrs (directory != null) { dir = directory; });
-
-in writeTextFile {
-  name = "services-${name}";
-  destination = "/services/${name}.pr";
-  text = ''
-    <metadata <daemon ${name}> { description: "${description}" }>
-    <require-service <daemon ${name}>>
-    <daemon ${name} ${toPreserves processSpec}>
-  '';
-}
+  targetSpecificArgs = if builtins.isFunction overrides then
+    overrides generatedTargetSpecificArgs
+  else
+    lib.recursiveUpdate generatedTargetSpecificArgs overrides;
+in createSynitDaemon targetSpecificArgs

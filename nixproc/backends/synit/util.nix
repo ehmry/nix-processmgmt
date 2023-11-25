@@ -1,7 +1,6 @@
 { lib }:
 
-let inherit (lib) isAttrs isBool isFunction isList;
-in rec {
+rec {
   /* Generates text-encoded Preserves from an arbitrary value.
 
      Records are generated for lists with a final element in
@@ -17,6 +16,7 @@ in rec {
     let
       toPreserves' = toPreserves args;
       concatItems = toString;
+      mapToSeq = lib.strings.concatMapStringsSep " " toPreserves';
       recordLabel = list:
         with builtins;
         let len = length list;
@@ -24,29 +24,34 @@ in rec {
           null
         else
           let end = elemAt list (len - 1);
-          in if (isAttrs end) && (attrNames end) == [ "record" ] then
+          in if (lib.isAttrs end) && (attrNames end) == [ "record" ] then
             end
           else
             null;
+      stringChecks = {
+        inherit (lib) isFloat isInt isString isPath isDerivation;
+      };
     in v:
-    if isAttrs v then
+    if builtins.any (f: f v) (builtins.attrValues stringChecks) then
+      builtins.toJSON v
+    else if lib.isAttrs v then
       "{ ${
         concatItems
         (lib.attrsets.mapAttrsToList (key: val: "${key}: ${toPreserves' val}")
           v)
       } }"
-    else if isList v then
+    else if lib.isList v then
       let label = recordLabel v;
       in if label == null then
-        "[ ${concatItems (map toPreserves' v)} ]"
+        "[ ${mapToSeq v} ]"
       else
-        "<${label.record} ${concatItems (map toPreserves' (lib.lists.init v))}>"
-    else if isBool v then
+        "<${label.record} ${mapToSeq (lib.lists.init v)}>"
+    else if lib.isBool v then
       (if v then "#t" else "#f")
-    else if isFunction v then
-      abort "generators.toPreserves: cannot convert a function to Preserves"
-    else if isNull v then
-      "null"
+    else if lib.isNull v then
+      "<null>"
+    else if lib.isFunction v then
+      toString v # failure
     else
-      builtins.toJSON v;
+      abort "cannot coerce the value ${v} to Preserves";
 }
