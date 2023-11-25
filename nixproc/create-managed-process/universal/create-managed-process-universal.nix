@@ -115,7 +115,7 @@ let
   };
 
   synit = import ../../backends/synit {
-    inherit (pkgs) lib writeTextFile;
+    inherit (pkgs) lib undaemonize writeTextFile;
   };
 
 in

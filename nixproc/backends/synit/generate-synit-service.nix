@@ -1,4 +1,4 @@
-{ lib, createSynitDaemon }:
+{ lib, createSynitDaemon, undaemonize }:
 
 { name, description, initialize, daemon, daemonArgs, instanceName, pidFile
 , foregroundProcess, foregroundProcessArgs, path, environment, directory, umask
@@ -8,10 +8,10 @@ let
   generatedTargetSpecificArgs = {
     inherit name description environment directory dependencies;
 
-    argv = if daemon != null then
-      [ daemon ] ++ daemonArgs
+    argv = if foregroundProcess != null then
+      [ foregroundProcess ] ++ foregroundProcessArgs
     else
-      [ foregroundProcess ] ++ foregroundProcessArgs;
+      [ "${undaemonize}/bin/undaemonize" daemon ] ++ daemonArgs;
   };
 
   targetSpecificArgs = if builtins.isFunction overrides then

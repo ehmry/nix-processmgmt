@@ -1,4 +1,4 @@
-{ lib, writeTextFile }:
+{ lib, undaemonize, writeTextFile }:
 
 rec {
   util = import ./util.nix { inherit lib; };
@@ -12,6 +12,6 @@ rec {
 
   generateSynitService =
     import ../../backends/synit/generate-synit-service.nix {
-      inherit lib createSynitDaemon;
+      inherit lib createSynitDaemon undaemonize;
     };
 }
