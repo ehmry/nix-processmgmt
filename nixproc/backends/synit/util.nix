@@ -48,7 +48,7 @@ rec {
         "<${label.record} ${mapToSeq (lib.lists.init v)}>"
     else if lib.isBool v then
       (if v then "#t" else "#f")
-    else if lib.isNull v then
+    else if v == null then
       "<null>"
     else if lib.isFunction v then
       toString v # failure
