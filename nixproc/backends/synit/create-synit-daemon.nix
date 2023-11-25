@@ -1,6 +1,6 @@
 { lib, writeTextFile, toPreserves }:
 
-{ name, description, daemon, daemonArgs, environment, directory
+{ name, description, argv, environment, directory
 # List of services that this configuration depends on.
 , dependencies ? [ ]
   # Daemon will not be started until all elements of depends-on are asserted.
@@ -14,7 +14,7 @@ let
   #  map (arg: ''"${lib.replaceStrings [ ''"'' ] [ ''\"'' ] (toString arg)}"'');
 
   processSpec = {
-    argv = [ daemon ] ++ daemonArgs;
+    inherit argv;
     env = environment;
   } // (lib.attrsets.optionalAttrs (directory != null) { dir = directory; });
 

@@ -6,8 +6,12 @@
 
 let
   generatedTargetSpecificArgs = {
-    inherit name description daemon daemonArgs environment directory
-      dependencies;
+    inherit name description environment directory dependencies;
+
+    argv = if daemon != null then
+      [ daemon ] ++ daemonArgs
+    else
+      [ foregroundProcess ] ++ foregroundProcessArgs;
   };
 
   targetSpecificArgs = if builtins.isFunction overrides then
