@@ -15,7 +15,10 @@ let
     (args // { processManager = "synit"; } // extraParams);
 
   processes = if exprFile == null then { } else processesFun processesArgs;
-in pkgs.buildEnv {
-  name = "synit";
-  paths = map (builtins.getAttr "pkg") (builtins.attrValues processes);
-}
+in pkgs.runCommand "synit-processes.pr" {
+  nativeBuildInputs = [ pkgs.preserves-tools ];
+  env.config_inputs =
+    pkgs.lib.strings.concatMapStringsSep " " (builtins.getAttr "pkg") (builtins.attrValues processes);
+} ''
+  cat $(find $config_inputs -name '*.pr') | preserves-tool convert > "$out"
+''

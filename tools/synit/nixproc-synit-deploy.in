@@ -122,7 +122,21 @@ checkNixStateDir
 checkProfile
 composeOldProfilePath
 
-# TODO
+if [ "$profilePath" = "" ]
+then
+    echo "No profile path was provided!" >&2
+    exit 1
+fi
+
+# Initialize all state
+
+nixproc-init-state $stateDirArg $runtimeDirArg $logDirArg $tmpDirArg $cacheDirArg $spoolDirArg $lockDirArg $libDirArg $forceDisableUserChangeArg
+
+# Create new groups and users
+createNewGroups
+createNewUsers
+
+cp -v $profilePath /etc/syndicate/services/processes.pr
 
 # Delete obsolete users and groups
 deleteObsoleteUsers
