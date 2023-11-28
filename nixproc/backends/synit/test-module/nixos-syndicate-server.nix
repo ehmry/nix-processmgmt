@@ -2,8 +2,13 @@
 
 let
   syndicate-server = pkgs.syndicate-server or (let
-    repo = builtins.fetchTarball
-      "https://git.syndicate-lang.org/ehmry/syndicate-flake/archive/trunk.tar.gz";
+    repo = pkgs.fetchFromGitea {
+      domain = "git.syndicate-lang.org";
+      owner = "ehmry";
+      repo = "syndicate-flake";
+      rev = "e28f71ba8878478cc160bd901da2f7b9bee29a5f";
+      hash = "sha256-YaHKplVpnaL95Xwv7SYUKvNssiulLQmIAF/G78g9KZc=";
+    };
     pkgs' = import repo { inherit pkgs; };
   in pkgs'.syndicate-server);
 
@@ -16,11 +21,21 @@ let
   };
 
 in {
+  networking.localCommands = ''
+    echo '<run-service <milestone network>>' > \
+      /run/etc/syndicate/core/milestone-network.pr
+  '';
+
   systemd.services.syndicate-server = {
     description = "Syndicate dataspace server";
     wantedBy = [ "basic.target" ];
+    before = [ "network.target" ];
     preStart = ''
-      mkdir -p "/etc/syndicate/services"
+      mkdir -p \
+        "/etc/syndicate/services" \
+        "/run/etc/syndicate/core" \
+        "/run/etc/syndicate/services" \
+
       ${lib.getExe pkgs.rsync} -r \
         --exclude 001-console-getty.pr \
         --exclude configdirs.pr \
@@ -29,6 +44,10 @@ in {
         --exclude services \
         "${synit}/packaging/packages/synit-config/files/etc/syndicate/" \
         "/etc/syndicate"
+      echo '<require-service <config-watcher "/run/etc/syndicate/core" $.>>' > \
+        /etc/syndicate/core/configdirs.pr
+      echo '<require-service <config-watcher "/run/etc/syndicate/services" $.>>' > \
+        /etc/syndicate/services/configdirs.pr
     '';
     serviceConfig = {
       ExecStart =

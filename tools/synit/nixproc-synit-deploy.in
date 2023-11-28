@@ -136,7 +136,15 @@ nixproc-init-state $stateDirArg $runtimeDirArg $logDirArg $tmpDirArg $cacheDirAr
 createNewGroups
 createNewUsers
 
-cp -v $profilePath /etc/syndicate/services/processes.pr
+dest_file=/run/etc/syndicate/services/processes.pr
+
+if [ -e "$dest_file"] && [ ! -L "$dest_file" ]
+then
+  echo "$dest_file exists but is not a symlink, refusing to overwrite"
+  exit 1
+fi
+
+ln -sf $profilePath /etc/syndicate/services/processes.pr
 
 # Delete obsolete users and groups
 deleteObsoleteUsers
