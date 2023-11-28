@@ -14,9 +14,24 @@ let
   processesArgs = builtins.intersectAttrs processesFormalArgs
     (args // { processManager = "synit"; } // extraParams);
 
+  preserves-tools = if builtins.hasAttr "preserves-tools" pkgs then
+    builtins.trace
+    "not using inlined preserves-tools package because it is already in nixpkgs"
+    pkgs.preserves-tools
+  else
+    pkgs.rustPlatform.buildRustPackage rec {
+      pname = "preserves-tools";
+      version = "4.992.2";
+      src = pkgs.fetchCrate {
+        inherit pname version;
+        hash = "sha256-1IX6jTAH6qWE8X7YtIka5Z4y70obiVotOXzRnu+Z6a0=";
+      };
+      cargoHash = "sha256-D/ZCKRqZtPoCJ9t+5+q1Zm79z3K6Rew4eyuyDiGVGUs=";
+    };
+
   processes = if exprFile == null then { } else processesFun processesArgs;
 in pkgs.runCommand "synit-processes.pr" {
-  nativeBuildInputs = [ pkgs.preserves-tools ];
+  nativeBuildInputs = [ preserves-tools ];
   env.config_inputs =
     pkgs.lib.strings.concatMapStringsSep " " (builtins.getAttr "pkg")
     (builtins.attrValues processes);

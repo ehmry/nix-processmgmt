@@ -1,4 +1,4 @@
-{ lib, runtimeShell, writeScript, writeTextFile, undaemonize }:
+{ lib, busybox, runtimeShell, writeScript, writeTextFile, undaemonize }:
 
 rec {
   util = import ./util.nix { inherit lib; };
@@ -6,7 +6,7 @@ rec {
   toPreserves = util.toPreserves { };
 
   createSynitDaemon = import ../../backends/synit/create-synit-daemon.nix {
-    inherit lib runtimeShell writeScript writeTextFile;
+    inherit lib busybox runtimeShell writeScript writeTextFile;
     inherit toPreserves;
   };
 

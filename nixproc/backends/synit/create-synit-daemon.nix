@@ -1,6 +1,6 @@
-{ lib, runtimeShell, toPreserves, writeScript, writeTextFile }:
+{ lib, busybox, runtimeShell, toPreserves, writeScript, writeTextFile }:
 
-{ name, description, argv, environment, directory
+{ name, description, argv, environment, directory, path
 # Shell instructions that specify how the state of the process should be initialized.
 , initialize ? ""
   # List of services that this configuration depends on.
@@ -12,12 +12,12 @@
 , require-service ? true }:
 
 let
-  #quoteArgs =
-  #  map (arg: ''"${lib.replaceStrings [ ''"'' ] [ ''\"'' ] (toString arg)}"'');
+  env = environment // {
+    PATH = lib.strings.makeBinPath (path ++ [ busybox ]);
+  };
 
   processSpec = {
-    inherit argv;
-    env = environment;
+    inherit argv env;
   } // (lib.attrsets.optionalAttrs (directory != null) { dir = directory; });
 
   serviceName = "<daemon ${name}>";
@@ -50,7 +50,12 @@ in writeTextFile {
       '';
     in ''
       <depends-on ${serviceName} <service-state <daemon ${initializeName}> complete>>
-      <daemon ${initializeName} <one-shot [ "${script}" ]>>
+      <daemon ${initializeName} {
+        argv: [ "${script}" ]
+        env: ${toPreserves env}
+        readyOnStart: #f
+        restart: on-error
+      }>
     ''))
 
     + ''
