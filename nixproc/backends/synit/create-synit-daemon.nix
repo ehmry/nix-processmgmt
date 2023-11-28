@@ -1,6 +1,6 @@
-{ lib, busybox, runtimeShell, toPreserves, writeScript, writeTextFile }:
+{ lib, busybox, runtimeShell, toPreserves, util, writeScript, writeTextFile }:
 
-{ name, description, argv, environment, directory, path
+{ name, description, environment, directory, path, user, process, args
 # Shell instructions that specify how the state of the process should be initialized.
 , initialize ? ""
   # List of services that this configuration depends on.
@@ -9,15 +9,24 @@
   # Example: [ "<service-state <milestone network> up>" ]
 , depends-on ? [ ]
   # Whether the daemon shall be declared as required.
-, require-service ? true }:
+, require-service ? true, forceDisableUserChange ? false }:
 
 let
   env = environment // {
     PATH = lib.strings.makeBinPath (path ++ [ busybox ]);
   };
 
+  user' = util.determineUser { inherit user forceDisableUserChange; };
+
   processSpec = {
-    inherit argv env;
+    argv = if user' == null then
+      [ process ] ++ args
+    else
+      util.invokeDaemon {
+        inherit process args;
+        su = "su";
+      };
+    inherit env;
   } // (lib.attrsets.optionalAttrs (directory != null) { dir = directory; });
 
   serviceName = "<daemon ${name}>";

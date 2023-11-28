@@ -132,10 +132,6 @@ fi
 
 nixproc-init-state $stateDirArg $runtimeDirArg $logDirArg $tmpDirArg $cacheDirArg $spoolDirArg $lockDirArg $libDirArg $forceDisableUserChangeArg
 
-# Create new groups and users
-createNewGroups
-createNewUsers
-
 dest_file=/run/etc/syndicate/services/processes.pr
 
 if [ -e "$dest_file"] && [ ! -L "$dest_file" ]
@@ -144,7 +140,11 @@ then
   exit 1
 fi
 
-ln -sf $profilePath /etc/syndicate/services/processes.pr
+# Create new groups and users
+createNewGroups
+createNewUsers
+
+ln -sf $profilePath /run/etc/syndicate/services/processes.pr
 
 # Delete obsolete users and groups
 deleteObsoleteUsers

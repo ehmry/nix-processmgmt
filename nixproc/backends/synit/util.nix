@@ -12,11 +12,10 @@ rec {
        toPreserves { } [{ a = 0; b = 1; } "c" [ true false ] { record = "foo"; }]
        => "<foo { a: 0 b: 1 } \"c\" [ #t #f ]>"
   */
-  toPreserves = { }@args:
+  toPreserves =
     let
-      toPreserves' = toPreserves args;
       concatItems = toString;
-      mapToSeq = lib.strings.concatMapStringsSep " " toPreserves';
+      mapToSeq = lib.strings.concatMapStringsSep " " toPreserves;
       recordLabel = list:
         with builtins;
         let len = length list;
@@ -37,7 +36,7 @@ rec {
     else if lib.isAttrs v then
       "{ ${
         concatItems
-        (lib.attrsets.mapAttrsToList (key: val: "${key}: ${toPreserves' val}")
+        (lib.attrsets.mapAttrsToList (key: val: "${key}: ${toPreserves val}")
           v)
       } }"
     else if lib.isList v then

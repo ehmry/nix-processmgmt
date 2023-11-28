@@ -6,12 +6,18 @@
 
 let
   generatedTargetSpecificArgs = {
-    inherit name description environment directory path dependencies initialize;
+    inherit name description environment directory path dependencies initialize
+      user;
 
-    argv = map toString (if foregroundProcess != null then
-      [ foregroundProcess ] ++ foregroundProcessArgs
+    process = if foregroundProcess != null then
+      foregroundProcess
     else
-      [ "${undaemonize}/bin/undaemonize" daemon ] ++ daemonArgs);
+      (lib.getExe undaemonize);
+
+    args = map toString (if foregroundProcess != null then
+      foregroundProcessArgs
+    else
+      [ daemon ] ++ daemonArgs);
   };
 
   targetSpecificArgs = if builtins.isFunction overrides then
