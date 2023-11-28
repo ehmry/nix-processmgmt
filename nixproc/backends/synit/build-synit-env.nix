@@ -18,7 +18,14 @@ let
 in pkgs.runCommand "synit-processes.pr" {
   nativeBuildInputs = [ pkgs.preserves-tools ];
   env.config_inputs =
-    pkgs.lib.strings.concatMapStringsSep " " (builtins.getAttr "pkg") (builtins.attrValues processes);
-} ''
-  cat $(find $config_inputs -name '*.pr') | preserves-tool convert > "$out"
+    pkgs.lib.strings.concatMapStringsSep " " (builtins.getAttr "pkg")
+    (builtins.attrValues processes);
+}
+# Process the configuration with "preserves-tool"
+# to catch syntax errors and for normalization.
+''
+  find $config_inputs -name '*.pr' | while read f
+  do
+    preserves-tool convert < "$f" >> "$out" || { echo "failed to process $f"; exit 1; }
+  done
 ''
