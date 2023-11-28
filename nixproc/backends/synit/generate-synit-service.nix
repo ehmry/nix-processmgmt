@@ -8,10 +8,10 @@ let
   generatedTargetSpecificArgs = {
     inherit name description environment directory dependencies initialize;
 
-    argv = if foregroundProcess != null then
+    argv = map toString (if foregroundProcess != null then
       [ foregroundProcess ] ++ foregroundProcessArgs
     else
-      [ "${undaemonize}/bin/undaemonize" daemon ] ++ daemonArgs;
+      [ "${undaemonize}/bin/undaemonize" daemon ] ++ daemonArgs);
   };
 
   targetSpecificArgs = if builtins.isFunction overrides then

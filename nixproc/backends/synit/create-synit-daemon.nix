@@ -50,10 +50,7 @@ in writeTextFile {
       '';
     in ''
       <depends-on ${serviceName} <service-state <daemon ${initializeName}> complete>>
-      <deamon ${initializeName} {
-        argv: [ "${script}" ]
-        restart: on-error
-      }>
+      <daemon ${initializeName} <one-shot [ "${script}" ]>>
     ''))
 
     + ''
