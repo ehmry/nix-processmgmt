@@ -1,4 +1,5 @@
-{ lib, busybox, runtimeShell, toPreserves, util, writeScript, writeTextFile }:
+{ lib, stdenv, busybox, runtimeShell, preserves-tools, toPreserves, util
+, writeScript }:
 
 { name, description, environment, directory, path, user, process, args
 # Shell instructions that specify how the state of the process should be initialized.
@@ -12,9 +13,10 @@
 , require-service ? true, forceDisableUserChange ? false }:
 
 let
-  env = environment // {
-    PATH = lib.strings.makeBinPath (path ++ [ busybox ]);
-  };
+  env = lib.attrsets.mapAttrs (_: toString) environment
+    // lib.attrsets.optionalAttrs (path != [ ]) {
+      PATH = lib.strings.makeBinPath (path ++ [ busybox ]);
+    };
 
   user' = util.determineUser { inherit user forceDisableUserChange; };
 
@@ -26,15 +28,18 @@ let
         inherit process args;
         su = "su";
       };
-    inherit env;
-  } // (lib.attrsets.optionalAttrs (directory != null) { dir = directory; });
+  } // (lib.attrsets.optionalAttrs (directory != null) { dir = directory; })
+    // (lib.attrsets.optionalAttrs (env != { }) { inherit env; });
 
   serviceName = "<daemon ${name}>";
 
-in writeTextFile {
+in stdenv.mkDerivation {
   name = "services-${name}";
-  destination = "/services/${name}.pr";
-  text = ''
+  nativeBuildInputs = [ preserves-tools ];
+  inherit serviceName;
+  buildCommand = ''
+    mkdir -p $out/etc/syndicate/services
+    preserves-tool convert << END_OF_${name} > "$out/etc/syndicate/services/${name}.pr"
     <metadata ${serviceName} { description: "${description}" }>
   ''
 
@@ -69,7 +74,6 @@ in writeTextFile {
 
     + ''
       <daemon ${name} ${toPreserves processSpec}>
+      END_OF_${name}
     '';
-} // {
-  inherit serviceName;
 }

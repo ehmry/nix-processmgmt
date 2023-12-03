@@ -33,6 +33,8 @@ Options:
 
 Environment:
   NIX_STATE_DIR        Overrides the location of the Nix state directory
+  SYNIT_TARGET_DIR     Directory where Synit configuration is managed.
+                       Defaults to /etc/syndicate/services/.
   NIXPROC_STATE_DIR    Changes the directory in which the state of the
                        processes is stored
   NIXPROC_RUNTIME_DIR  Changes the directory in which the PID files are stored
@@ -128,23 +130,70 @@ then
     exit 1
 fi
 
+SYNIT_TARGET_DIR=${SYNIT_TARGET_DIR:-/etc/syndicate/services}
+
 # Initialize all state
 
 nixproc-init-state $stateDirArg $runtimeDirArg $logDirArg $tmpDirArg $cacheDirArg $spoolDirArg $lockDirArg $libDirArg $forceDisableUserChangeArg
 
-dest_file=/run/etc/syndicate/services/processes.pr
+# Determine paths of old scripts
 
-if [ -e "$dest_file"] && [ ! -L "$dest_file" ]
+oldscripts=()
+
+if [ -d "$oldProfilePath" ]
 then
-  echo "$dest_file exists but is not a symlink, refusing to overwrite"
-  exit 1
+    echo "Using previous Nix profile: $oldProfilePath" >&2
+
+    for i in $(ls $oldProfilePath/*.pr | sort -r)
+    do
+        currentPath=$(readlink -f $i)
+        oldscripts+=($currentPath)
+    done
+fi
+
+# Determine paths of new scripts
+
+newscripts=()
+
+if [ -d "$profilePath" ]
+then
+	for i in $profilePath/etc/syndicate/services/*.pr
+    do
+       currentPath=$(readlink -f $i)
+       newscripts+=($currentPath)
+    done
 fi
 
 # Create new groups and users
 createNewGroups
 createNewUsers
 
-ln -sf $profilePath /run/etc/syndicate/services/processes.pr
+# Remove obsolete scripts
+
+for i in ${oldscripts[@]}
+do
+    if ! containsElement "$i" "${newscripts[@]}"
+    then
+        mutablepath="$SYNIT_TARGET_DIR/$(basename "$i")"
+        if [ -e "$mutablepath" ]
+        then
+            echo "Retract $mutablepath" >&2
+            rm "$mutablepath"
+        fi
+    fi
+done
+
+# Assert new scripts
+
+for i in $profilePath/etc/syndicate/services/*.pr
+do
+    if ! containsElement "$(readlink -f "$i")" "${oldunits[@]}"
+    then
+        mutablepath="$SYNIT_TARGET_DIR/$(basename "$i")"
+        echo "Assert  $mutablepath" >&2
+        ln -sfn "$(readlink -f "$i")" "$mutablepath"
+    fi
+done
 
 # Delete obsolete users and groups
 deleteObsoleteUsers

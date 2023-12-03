@@ -115,7 +115,7 @@ let
   };
 
   synit = import ../../backends/synit {
-    inherit (pkgs) lib busybox runtimeShell undaemonize writeScript writeTextFile;
+    inherit (pkgs) lib stdenv busybox runtimeShell preserves-tools undaemonize writeScript;
   };
 
 in
